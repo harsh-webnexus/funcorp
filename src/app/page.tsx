@@ -1,65 +1,257 @@
-import Image from "next/image";
+import BrandSlider from '@/components/home/BrandSlider'
+import SpotlightBlock from '@/components/home/SpotlightBlock'
+import ProductBlock from '@/components/home/ProductBlock'
+import AgeSection from '@/components/home/AgeSection'
+import CategoryGrid from '@/components/home/CategoryGrid'
+import BrandTabBlock from '@/components/home/BrandTabBlock'
+import CustomServiceBlock from '@/components/home/CustomServiceBlock'
+import Image from 'next/image'
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
+    <div className="overflow-hidden">
+      {/* Brand Slider */}
+      <BrandSlider />
+      
+      {/* Spotlight Banner */}
+      <SpotlightBlock />
+      
+      {/* Age Section */}
+      <AgeSection />
+      
+      {/* Shop by Category */}
+      <CategoryGrid />
+      
+      {/* Double Banner */}
+      <section className="container-custom my-8 md:my-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <a href="/collections/disney" className="block overflow-hidden group">
+            <div className="relative aspect-[2/1] w-full">
+              <Image 
+                src="/images/Disney_mattel.webp" 
+                alt="Disney Collection"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+          <a href="/collections/hot-wheels" className="block overflow-hidden group">
+            <div className="relative aspect-[2/1] w-full">
+              <Image 
+                src="/images/Monster_trucks.webp" 
+                alt="Hot Wheels Collection"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
           </a>
         </div>
-      </main>
+      </section>
+      
+      {/* Lego Shop */}
+      <ProductBlock 
+        title="THE LEGO SHOP"
+        viewAllLink="/collections/lego"
+        viewAllText="VISIT LEGO STORE"
+        collection="lego"
+        bgColor="#fbc80b"
+      />
+      
+      {/* Lego Brand Tab */}
+      <BrandTabBlock />
+      
+      {/* Barbie New Launches */}
+      <ProductBlock 
+        title="BARBIE NEW LAUNCHES"
+        viewAllLink="/collections/barbie"
+        viewAllText="VISIT BARBIE STORE"
+        collection="barbie"
+        bgColor="#f8badc"
+      />
+      
+      {/* Themes & Characters */}
+      <BrandTabBlock type="characters" />
+      
+      {/* Packaging Damaged Banner */}
+      <section className="bg-[#e95144] py-12 md:py-16 my-8">
+        <div className="container-custom">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="md:w-1/2 mb-8 md:mb-0">
+              <div className="relative aspect-[2/1] w-full">
+                <Image 
+                  src="/images/packaging-Damaged.webp" 
+                  alt="Packaging Damaged Products"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+            </div>
+            <div className="md:w-1/2 md:pl-12 text-center md:text-left">
+              <h4 className="text-[#fccf39] text-lg md:text-xl font-bold mb-4">Limited Stocks*</h4>
+              <h2 className="text-white text-3xl md:text-5xl font-bold mb-4">PACKAGING DAMAGED PRODUCTS</h2>
+              <p className="text-[#fccf39] mb-6">Get EXCITING DEALS on your favourite TOYS, GAMES & MORE!</p>
+              <a 
+                href="/collections/packaging-damaged" 
+                className="inline-block bg-white text-[#232323] px-8 py-3 font-bold uppercase hover:bg-[#fccf39] transition-colors"
+              >
+                SHOP NOW
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Soft Toys */}
+      <ProductBlock 
+        title="SOFT TOYS & PLUSH"
+        viewAllLink="/collections/soft-toys"
+        viewAllText="VIEW ALL"
+        collection="softToys"
+      />
+      
+      {/* Brand Banners */}
+      <section className="container-custom my-8 md:my-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a href="/collections/nerf" className="block overflow-hidden group">
+            <div className="relative aspect-square w-full">
+              <Image 
+                src="/images/Nerf.webp" 
+                alt="Nerf"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+          </a>
+          <a href="/collections/play-doh" className="block overflow-hidden group">
+            <div className="relative aspect-square w-full">
+              <Image 
+                src="/images/play_Doh.webp" 
+                alt="Play-Doh"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+          </a>
+          <a href="/collections/hasbro-gaming" className="block overflow-hidden group">
+            <div className="relative aspect-square w-full">
+              <Image 
+                src="/images/Hasbro_Gaming.webp" 
+                alt="Hasbro Gaming"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+          </a>
+        </div>
+      </section>
+      
+      {/* Books Section */}
+      <section className="container-custom my-12">
+        <div className="section-title">
+          <h2>BOOKS FOR KIDS</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <a href="/collections/early-learning-books" className="block">
+              <div className="relative aspect-square w-full">
+                <Image 
+                  src="/images/Early_Learning_Books.webp" 
+                  alt="Early Learning Books"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            </a>
+            <a href="/collections/story-books" className="block">
+              <div className="relative aspect-square w-full">
+                <Image 
+                  src="/images/Story_Books.webp" 
+                  alt="Story Books"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            </a>
+            <a href="/collections/interactive-activity-books" className="block">
+              <div className="relative aspect-square w-full">
+                <Image 
+                  src="/images/Interactive_Activity_Books.webp" 
+                  alt="Activity Books"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            </a>
+            <a href="/collections/picture-books" className="block">
+              <div className="relative aspect-square w-full">
+                <Image 
+                  src="/images/Picture_Books.webp" 
+                  alt="Picture Books"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            </a>
+          </div>
+          <a href="/collections/drawing-books" className="block">
+            <div className="relative aspect-square md:aspect-auto md:h-full w-full">
+              <Image 
+                src="/images/Drawing_Painting_Colouring_Books.webp" 
+                alt="Drawing Books"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+          </a>
+        </div>
+      </section>
+      
+      {/* Instagram Feed */}
+      <section className="bg-[#f44336] py-12">
+        <div className="container-custom text-center">
+          <h2 className="text-white text-2xl md:text-3xl font-bold mb-8">FUNCORP ON INSTAGRAM</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {[1,2,3,4,5,6].map((item) => (
+              <div key={item} className="relative aspect-square bg-gray-200">
+                <Image 
+                  src={`/images/instagram-${item}.jpg`} 
+                  alt={`Instagram post ${item}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Payment Banner */}
+      <section className="container-custom my-8">
+        <div className="relative aspect-[3/1] w-full">
+          <Image 
+            src="/images/payment-banner.webp" 
+            alt="Payment Options"
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
+      </section>
+      
+      {/* Why Choose Us */}
+      <CustomServiceBlock />
     </div>
-  );
+  )
 }
