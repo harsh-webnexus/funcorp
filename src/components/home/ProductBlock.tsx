@@ -31,7 +31,7 @@ export default function ProductBlock({
     <section className="py-8 md:py-12" style={{ backgroundColor: bgColor }}>
       <div className="container-custom">
         <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#E9454D]">{title}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#E9454D] text-center">{title}</h2>
           <Link 
             href={viewAllLink}
             className="text-[#E9454D] font-bold hover:underline mt-2 md:mt-0"

@@ -217,25 +217,7 @@ export default function Home() {
         </div>
       </section>
       
-      {/* Instagram Feed */}
-      <section className="bg-[#f44336] py-12">
-        <div className="container-custom text-center">
-          <h2 className="text-white text-2xl md:text-3xl font-bold mb-8">FUNCORP ON INSTAGRAM</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {[1,2,3,4,5,6].map((item) => (
-              <div key={item} className="relative aspect-square bg-gray-200">
-                <Image 
-                  src={`/images/instagram-${item}.jpg`} 
-                  alt={`Instagram post ${item}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
       
       {/* Payment Banner */}
       <section className="container-custom my-8">

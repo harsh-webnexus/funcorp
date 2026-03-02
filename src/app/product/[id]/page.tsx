@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { products } from '@/lib/data'
 import ProductGallery from '@/components/product/ProductGallery'
@@ -15,9 +14,7 @@ interface ProductPageProps {
 // FETCHING LOGIC - This finds the product by ID or handle
 const getProductById = (id: string) => {
   console.log('🔍 Looking for product with ID/handle:', id)
-  
-  // Try to parse as numeric ID
-  const numericId = parseInt(id)
+  console.log('Type of ID:', typeof id)
   
   // Combine all products from your data
   const allProducts = [
@@ -59,19 +56,28 @@ const getProductById = (id: string) => {
     ...(products.uno || []),
   ]
   
-  // Try to find by numeric ID first
-  if (!isNaN(numericId)) {
-    const productById = allProducts.find(p => p.id === numericId)
-    if (productById) {
-      console.log('✅ Found product by ID:', productById.title)
-      return productById
-    }
+  console.log('Total products loaded:', allProducts.length)
+  console.log('First few product IDs:', allProducts.slice(0, 3).map(p => ({ 
+    id: p.id, 
+    type: typeof p.id,
+    title: p.title?.substring(0, 30)
+  })))
+  
+  // IMPORTANT: Convert both to string for comparison
+  // Product IDs in data are numbers, URL params are strings
+  const productById = allProducts.find(p => 
+    String(p.id) === String(id) // Convert both to string for comparison
+  )
+  
+  if (productById) {
+    console.log('✅ Found product by ID:', productById.title)
+    return productById
   }
   
   // If not found by ID, try by handle (URL-friendly name)
   const productByHandle = allProducts.find(p => 
     p.handle === id || 
-    p.title.toLowerCase().replace(/\s+/g, '-') === id
+    p.title?.toLowerCase().replace(/\s+/g, '-') === id.toLowerCase()
   )
   
   if (productByHandle) {
@@ -80,6 +86,7 @@ const getProductById = (id: string) => {
   }
   
   console.log('❌ Product not found for ID/handle:', id)
+  console.log('Available IDs:', allProducts.slice(0, 10).map(p => p.id))
   return null
 }
 
@@ -88,29 +95,37 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const resolvedParams = await params
   const productId = resolvedParams.id
   
+  console.log('='.repeat(50))
+  console.log('ProductPage - Requested ID from URL:', productId)
+  console.log('='.repeat(50))
+  
   // Fetch the product
   const product = getProductById(productId)
   
   // If product not found, show 404 page
   if (!product) {
+    console.log('❌ Product not found, showing 404')
     notFound()
   }
   
-  // Generate collection slug from vendor
-  const collectionSlug = product.vendor.toLowerCase().replace(/\s+/g, '-')
+  console.log('✅ Product found, rendering page for:', product.title)
   
-  // Get all products for related products
+  // Generate collection slug from vendor
+  const collectionSlug = product.vendor?.toLowerCase().replace(/\s+/g, '-') || 'products'
+  
+  // Get all products for related products (limit to avoid performance issues)
   const allProducts = [
     ...(products.actionFigures || []),
     ...(products.lego || []),
     ...(products.barbie || []),
     ...(products.softToys || []),
     ...(products.disneyPrincess || []),
+    ...(products.hotWheels || []),
   ]
   
   // Find related products (same vendor or category)
   const relatedProducts = allProducts
-    .filter(p => p.id !== product.id && (p.vendor === product.vendor || p.category === product.category))
+    .filter(p => String(p.id) !== String(product.id) && (p.vendor === product.vendor || p.category === product.category))
     .slice(0, 8)
   
   return (
@@ -127,7 +142,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               href={`/collections/${collectionSlug}`} 
               className="hover:text-[#E9454D]"
             >
-              {product.vendor}
+              {product.vendor || 'Products'}
             </Link>
             <span className="mx-2">/</span>
             <span className="text-gray-700">{product.title}</span>
@@ -136,7 +151,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Main Product Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             <ProductGallery 
-              images={product.images || [product.image]} 
+              images={product.images || (product.image ? [product.image] : [])} 
               title={product.title}
             />
             <ProductInfo product={product} />
@@ -152,8 +167,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
-      {/* Sticky Add to Cart */}
-      <StickyAddToCart product={product} />
+      {/* Sticky Add to Cart
+      <StickyAddToCart product={product} /> */}
     </>
   )
 }

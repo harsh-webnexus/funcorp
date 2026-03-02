@@ -4,6 +4,7 @@ import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import TopBar from '@/components/layout/TopBar'
+import AuthPrompt from '@/components/AuthPrompt'
 // import MobileMenu from '@/components/layout/MobileMenu'
 
 const poppins = Poppins({ 
@@ -30,6 +31,7 @@ export default function RootLayout({
         {/* <MobileMenu /> */}
         <main className="min-h-screen">{children}</main>
         <Footer />
+        <AuthPrompt />
       </body>
     </html>
   )

@@ -64,10 +64,10 @@ export default function ProductGrid({
             <span>Filter</span>
           </button>
           
-          <div className="text-sm text-gray-500">
+          {/* <div className="text-sm text-gray-500">
             Showing <span className="font-medium">{products.length}</span> of{' '}
             <span className="font-medium">{totalProducts}</span> results
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-4 w-full md:w-auto">

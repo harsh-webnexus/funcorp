@@ -1,62 +1,83 @@
-// src/app/checkout/types/checkout.ts
-export interface Customer {
-  email: string;
-  isLoggedIn: boolean;
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-}
+// app/checkout/types/checkout.ts
 
 export interface CartItem {
-  id: string;
-  productId: string;
+  id: string | number;
   title: string;
   price: number;
-  compareAtPrice?: number;
+  quantity: number;
   image: string;
   vendor: string;
-  sku: string;
-  condition: string;
-  quantity: number;
 }
 
 export interface Cart {
   items: CartItem[];
   subtotal: number;
+  total: number;
   itemCount: number;
+}
+
+export interface Customer {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  isLoggedIn: boolean;
 }
 
 export interface ShippingAddress {
   firstName: string;
   lastName: string;
-  address1: string;
-  address2?: string;
+  address: string;
+  apartment?: string;
   city: string;
-  zone: string;
+  state: string;
   postalCode: string;
-  phone: string;
   country: string;
-}
-
-export interface PaymentMethod {
-  id: string;
-  name: string;
-  brands?: string[];
-  description?: string;
-  instructions?: string;
+  phone: string;
 }
 
 export interface CheckoutFormData {
-  email: string;
-  marketingOptIn: boolean;
-  smsOptIn: boolean;
+  email?: string;
   shippingAddress: ShippingAddress;
-  paymentMethod: string;
-  billingSameAsShipping: boolean;
-  billingAddress?: ShippingAddress;
+  paymentMethod: 'cashfree' | 'cod' | 'card' | 'upi';
+  saveInfo?: boolean;
 }
 
-// Type guard for validation result
-export type ValidationResult = 
-  | { success: true }
-  | { error: string };
+export interface UserData {
+  email: string;
+  name: string;
+  phone?: string;
+}
+
+export interface Order {
+  id: string;
+  customer: {
+    email: string;
+    name: string;
+    phone: string;
+  };
+  shippingAddress: ShippingAddress;
+  items: CartItem[];
+  subtotal: number;
+  shippingCost: number;
+  tax: number;
+  total: number;
+  orderDate: string;
+  paymentMethod: string;
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  orderStatus: 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  estimatedDelivery?: string;
+}
+
+export interface PendingOrderData {
+  formData: CheckoutFormData;
+  cart: Cart;
+  totals: {
+    subtotal: number;
+    shippingCost: number;
+    tax: number;
+    total: number;
+  };
+  userData: UserData | null;
+  timestamp: number;
+}

@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FaSearch, FaUser, FaShoppingCart, FaHeart, FaBars, FaChevronRight } from 'react-icons/fa'
+import { useAuth } from '@/hooks/useAuth'
+import { useWishlist } from '@/hooks/useWishlist'
+import { useCart } from '@/hooks/useCart'
 
 // Define the type for category items
 interface CategoryItem {
@@ -133,7 +136,7 @@ const dropdownData = {
     { name: 'Giggles', href: '/collections/giggles' },
     { name: 'Majorette', href: '/collections/majorette' },
     { name: 'Disney', href: '/collections/disney' },
-    // { name: 'All Brands', href: '/collections/all-brands' },
+    // { name: 'All Brands', href: '/' },
   ],
   'shop-by-theme': [
     { 
@@ -201,10 +204,14 @@ const dropdownData = {
 }
 
 export default function Header() {
+  const { user, isLoading, logout } = useAuth();
+  const { totalItems: wishlistCount } = useWishlist();
+  const { totalItems: cartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showCategories, setShowCategories] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null)
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
 
   const handleMouseEnter = (dropdown: string) => {
     setActiveDropdown(dropdown)
@@ -232,6 +239,10 @@ export default function Header() {
   const handleSubMenuLeave = () => {
     setActiveSubMenu(null)
   }
+
+  // Get display name (either full name or email)
+  const displayName = user.name || user.email;
+  const displayInitial = displayName ? displayName.charAt(0).toUpperCase() : '?';
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -265,21 +276,108 @@ export default function Header() {
 
           {/* Icons */}
           <div className="flex items-center space-x-6">
-            <Link href="/account" className="hidden lg:flex items-center text-[#E9454D] hover:text-[#fccf39]">
-              <FaUser size={20} className="mr-2" />
-              <span className="text-sm">Sign In</span>
-            </Link>
+            {/* User Menu - Shows email instead of Sign In when authenticated */}
+            {!isLoading && (
+              <>
+                {user.isAuthenticated ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                      className="flex items-center space-x-2 text-[#E9454D] hover:text-[#fccf39] transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-[#E9454D] rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {displayInitial}
+                      </div>
+                      <span className="hidden lg:block text-sm max-w-[100px] truncate">
+                        {displayName}
+                      </span>
+                    </button>
+
+                    {/* User Dropdown */}
+                    {isUserDropdownOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setIsUserDropdownOpen(false)}
+                        />
+                        
+                        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                          <div className="px-4 py-3 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {user.name || 'User'}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate mt-1">
+                              {user.email}
+                            </p>
+                          </div>
+                          
+                          <Link
+                            href="/profile"
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E9454D] hover:text-white transition-colors"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                          >
+                            My Account
+                          </Link>
+                          
+                          <Link
+                            href="/orders"
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E9454D] hover:text-white transition-colors"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                          >
+                            My Orders
+                          </Link>
+                          
+                          <Link
+                            href="/wishlist"
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E9454D] hover:text-white transition-colors"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                          >
+                            Wishlist
+                          </Link>
+                          
+                          <button
+                            onClick={() => {
+                              logout();
+                              setIsUserDropdownOpen(false);
+                            }}
+                            className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-200 mt-2 pt-2"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <Link href="/account" className="hidden lg:flex items-center text-[#E9454D] hover:text-[#fccf39] transition-colors">
+                    <FaUser size={20} className="mr-2" />
+                    <span className="text-sm">Sign In</span>
+                  </Link>
+                )}
+              </>
+            )}
             
-            <Link href="/wishlist" className="relative text-[#E9454D] hover:text-[#fccf39]">
+            {/* Wishlist Icon with Dynamic Count */}
+            <Link href="/wishlist" className="relative text-[#E9454D] hover:text-[#fccf39] transition-colors">
               <FaHeart size={24} />
-              <span className="absolute -top-2 -right-2 bg-[#fccf39] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#fccf39] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             
-            <Link href="/cart" className="relative text-[#E9454D] hover:text-[#fccf39]">
+            {/* Cart Icon with Dynamic Count */}
+            <Link href="/cart" className="relative text-[#E9454D] hover:text-[#fccf39] transition-colors">
               <FaShoppingCart size={24} />
-              <span className="absolute -top-2 -right-2 bg-[#fccf39] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#fccf39] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             
+            {/* Mobile Menu Button */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="lg:hidden text-[#E9454D]"
@@ -358,9 +456,9 @@ export default function Header() {
 )}
             </div>
 
-            {/* Main Menu with Dropdowns - Fixed: Changed Link to span/button */}
+            {/* Main Menu with Dropdowns */}
             <ul className="flex items-center ml-8 space-x-1">
-              {/* Top Brands - Changed from Link to span */}
+              {/* Top Brands */}
               <li 
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('top-brands')}
@@ -388,7 +486,7 @@ export default function Header() {
                 )}
               </li>
 
-              {/* Shop by Theme - Changed from Link to span */}
+              {/* Shop by Theme */}
               <li 
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('shop-by-theme')}
@@ -444,7 +542,7 @@ export default function Header() {
                 )}
               </li>
 
-              {/* Other Brands - Changed from Link to span */}
+              {/* Other Brands */}
               <li 
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('other-brands')}
@@ -472,7 +570,7 @@ export default function Header() {
                 )}
               </li>
 
-              {/* Shop by Age - Changed from Link to span */}
+              {/* Shop by Age */}
               <li 
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('shop-by-age')}
@@ -500,7 +598,7 @@ export default function Header() {
                 )}
               </li>
 
-              {/* Special Offers - Changed from Link to span */}
+              {/* Special Offers */}
               <li 
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('special-offers')}
@@ -531,16 +629,41 @@ export default function Header() {
           </div>
         </nav>
 
-        {/* Mobile Menu - Hidden on desktop */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 w-full bg-white shadow-lg z-50">
             <div className="p-4">
+              {/* Mobile User Info */}
+              {user.isAuthenticated ? (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-900">{user.name || 'User'}</p>
+                  <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="mt-2 text-sm text-red-600 hover:text-red-700"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <Link 
+                  href="/account" 
+                  className="block mb-4 p-3 bg-[#E9454D] text-white text-center rounded-lg hover:bg-[#d13d45]"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In / Register
+                </Link>
+              )}
+              
               <ul className="space-y-2">
-                <li><Link href="/collections/top-brands" className="block py-2 text-[#E9454D] font-bold">Top Brands</Link></li>
-                <li><Link href="/collections/shop-by-theme" className="block py-2 text-[#E9454D] font-bold">Shop by Theme</Link></li>
-                <li><Link href="/collections/other-brands" className="block py-2 text-[#E9454D] font-bold">Other Brands</Link></li>
-                <li><Link href="/collections/shop-by-age" className="block py-2 text-[#E9454D] font-bold">Shop by Age</Link></li>
-                <li><Link href="/collections/special-offers" className="block py-2 text-[#E9454D] font-bold">Special Offers</Link></li>
+                <li><Link href="/collections/top-brands" className="block py-2 text-[#E9454D] font-bold" onClick={() => setIsMenuOpen(false)}>Top Brands</Link></li>
+                <li><Link href="/collections/shop-by-theme" className="block py-2 text-[#E9454D] font-bold" onClick={() => setIsMenuOpen(false)}>Shop by Theme</Link></li>
+                <li><Link href="/collections/other-brands" className="block py-2 text-[#E9454D] font-bold" onClick={() => setIsMenuOpen(false)}>Other Brands</Link></li>
+                <li><Link href="/collections/shop-by-age" className="block py-2 text-[#E9454D] font-bold" onClick={() => setIsMenuOpen(false)}>Shop by Age</Link></li>
+                <li><Link href="/collections/special-offers" className="block py-2 text-[#E9454D] font-bold" onClick={() => setIsMenuOpen(false)}>Special Offers</Link></li>
               </ul>
             </div>
           </div>

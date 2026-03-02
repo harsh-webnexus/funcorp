@@ -1313,7 +1313,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen ">
       {/* Collection Header */}
       <CollectionHeader
         title={collection.title}
@@ -1353,7 +1353,7 @@ export default function CollectionPage() {
         </div>
       </div>
 
-      {/* Recently Viewed Section */}
+      {/* Recently Viewed Section
       <div className="container-custom py-12">
         <h3 className="text-xl font-bold text-center mb-6">Recently Viewed Products</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -1365,7 +1365,7 @@ export default function CollectionPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
        {/* Categories Section - Added at the bottom */}
       <Categories 
         title="TOP CATEGORIES"

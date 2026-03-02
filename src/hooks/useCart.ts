@@ -1,132 +1,231 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react';
 
-// Define a proper type for the product that can be added to cart
-export interface CartProduct {
-  id: number
-  title: string
-  price: number
-  image: string
-  vendor: string
-  sku?: string
+export interface CartItem {
+  id: number;
+  title: string;
+  price: number;
+  quantity: number;
+  image: string;
+  vendor: string;
 }
 
-export interface CartItem extends CartProduct {
-  quantity: number
-}
+// Auth check helper
+const isUserLoggedIn = (): boolean => {
+  try {
+    const currentUser = localStorage.getItem('currentUser');
+    const userEmail = localStorage.getItem('userEmail');
+    return !!(currentUser || userEmail);
+  } catch (error) {
+    return false;
+  }
+};
 
-interface UseCartReturn {
-  items: CartItem[]
-  addToCart: (product: CartProduct, quantity: number) => void
-  removeFromCart: (productId: number) => Promise<void>
-  updateQuantity: (productId: number, quantity: number) => Promise<void>
-  clearCart: () => void
-  totalItems: number
-  totalPrice: number
-}
+// Get user email helper
+const getUserEmail = (): string | null => {
+  try {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      const parsed = JSON.parse(currentUser);
+      return parsed.email || null;
+    }
+    return localStorage.getItem('userEmail');
+  } catch (error) {
+    return null;
+  }
+};
 
-export function useCart(): UseCartReturn {
-  const [items, setItems] = useState<CartItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const isFirstRender = useRef(true)
-  const initialLoadDone = useRef(false)
+export function useCart() {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Load cart from localStorage only once on mount
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = () => {
+      const loggedIn = isUserLoggedIn();
+      setIsAuthenticated(loggedIn);
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('authChange', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('authChange', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
+
+  // Load cart from localStorage on mount
   useEffect(() => {
     const loadCart = () => {
       try {
-        const savedCart = localStorage.getItem('cart')
-        if (savedCart) {
-          const parsedCart = JSON.parse(savedCart)
-          setItems(parsedCart)
-          console.log('Loaded cart from localStorage:', parsedCart)
+        setIsLoading(true);
+        
+        // Always try to load cart first, regardless of auth state
+        const userEmail = getUserEmail();
+        
+        if (userEmail) {
+          // Try to load user-specific cart
+          const userCartKey = `cart_${userEmail}`;
+          const storedCart = localStorage.getItem(userCartKey);
+          
+          if (storedCart) {
+            setItems(JSON.parse(storedCart));
+          } else {
+            // If no user cart, check for guest cart and migrate
+            const guestCart = localStorage.getItem('guest_cart');
+            if (guestCart) {
+              const parsedGuestCart = JSON.parse(guestCart);
+              setItems(parsedGuestCart);
+              // Migrate to user cart
+              localStorage.setItem(userCartKey, guestCart);
+              localStorage.removeItem('guest_cart');
+            } else {
+              setItems([]);
+            }
+          }
+        } else {
+          // Not logged in - use guest cart
+          const guestCart = localStorage.getItem('guest_cart');
+          if (guestCart) {
+            setItems(JSON.parse(guestCart));
+          } else {
+            setItems([]);
+          }
         }
       } catch (error) {
-        console.error('Failed to parse cart:', error)
+        console.error('Error loading cart:', error);
+        setItems([]);
       } finally {
-        setIsLoading(false)
-        initialLoadDone.current = true
+        setIsLoading(false);
       }
-    }
-    
-    loadCart()
-  }, [])
+    };
 
-  // Save cart to localStorage whenever it changes, but with safeguards
+    loadCart();
+  }, []); // Remove isAuthenticated dependency - load on mount only
+
+  // Save cart to localStorage whenever it changes
   useEffect(() => {
-    // Don't save during initial load or first render
-    if (isLoading || isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-
-    // Only save if we've done initial load and items have changed
-    if (initialLoadDone.current) {
-      console.log('Saving cart to localStorage:', items)
-      localStorage.setItem('cart', JSON.stringify(items))
-    }
-  }, [items, isLoading])
-
-  const addToCart = useCallback((product: CartProduct, quantity: number) => {
-    console.log('Adding to cart:', product, 'quantity:', quantity)
-    
-    setItems(prevItems => {
-      // Check if product already exists in cart
-      const existingItemIndex = prevItems.findIndex(item => item.id === product.id)
+    if (!isLoading) {
+      const userEmail = getUserEmail();
       
-      if (existingItemIndex >= 0) {
-        // Product exists - update quantity
-        const updatedItems = [...prevItems]
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + quantity
-        }
-        console.log('Updated existing item:', updatedItems[existingItemIndex])
-        return updatedItems
+      if (userEmail) {
+        // Save to user-specific cart
+        const userCartKey = `cart_${userEmail}`;
+        localStorage.setItem(userCartKey, JSON.stringify(items));
       } else {
-        // Product doesn't exist - add new item
-        const newItem: CartItem = {
-          ...product,
-          quantity
-        }
-        console.log('Added new item:', newItem)
-        return [...prevItems, newItem]
+        // Save to guest cart
+        localStorage.setItem('guest_cart', JSON.stringify(items));
       }
-    })
-  }, [])
+      
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new Event('cartUpdated'));
+    }
+  }, [items, isLoading]);
 
-  const removeFromCart = useCallback(async (productId: number) => {
-    console.log('Removing from cart:', productId)
-    setItems(prevItems => prevItems.filter(item => item.id !== productId))
-  }, [])
+  // Calculate total items
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const updateQuantity = useCallback(async (productId: number, quantity: number) => {
-    if (quantity < 1) return
-    
-    console.log('Updating quantity:', productId, 'to', quantity)
-    setItems(prevItems =>
+  // Calculate total price
+  const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Add to cart
+  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Show login prompt
+      window.dispatchEvent(new CustomEvent('showAuthPrompt', { 
+        detail: { 
+          message: 'Please login to add items to cart',
+          redirect: window.location.pathname 
+        } 
+      }));
+      return;
+    }
+
+    setItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === product.id);
+      
+      let newItems;
+      if (existingItem) {
+        // Update quantity if item exists
+        newItems = prevItems.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        // Add new item
+        newItems = [...prevItems, { ...product, quantity }];
+      }
+
+      return newItems;
+    });
+  };
+
+  // Update quantity
+  const updateQuantity = (id: number, quantity: number) => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent('showAuthPrompt', { 
+        detail: { message: 'Please login to update cart' } 
+      }));
+      return;
+    }
+
+    if (quantity < 1) {
+      removeFromCart(id);
+      return;
+    }
+
+    setItems(prevItems => 
       prevItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === id ? { ...item, quantity } : item
       )
-    )
-  }, [])
+    );
+  };
 
-  const clearCart = useCallback(() => {
-    console.log('Clearing cart')
-    setItems([])
-  }, [])
+  // Remove from cart
+  const removeFromCart = (id: number) => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent('showAuthPrompt', { 
+        detail: { message: 'Please login to remove items from cart' } 
+      }));
+      return;
+    }
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-  const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    setItems(prevItems => prevItems.filter(item => item.id !== id));
+  };
+
+  // Clear cart
+  const clearCart = () => {
+    if (!isAuthenticated) {
+      window.dispatchEvent(new CustomEvent('showAuthPrompt', { 
+        detail: { message: 'Please login to clear cart' } 
+      }));
+      return;
+    }
+
+    setItems([]);
+  };
 
   return {
     items,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
     totalItems,
-    totalPrice
-  }
+    totalPrice,
+    isLoading,
+    isAuthenticated,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+  };
 }

@@ -1,161 +1,236 @@
-// src/app/checkout/page.tsx
-import { Suspense } from 'react';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import CheckoutForm from './components/CheckoutForm';
 import OrderSummary from './components/OrderSummary';
-import Loading from './loading';
+import { Cart, Customer, CartItem } from './types/checkout';
 
-// Types
-interface CartItem {
-  id: string;
-  productId: string;
-  title: string;
-  price: number;
-  compareAtPrice?: number;
-  image: string;
-  vendor: string;
-  sku: string;
-  condition: string;
-  quantity: number;
+// Define types for localStorage data
+interface StoredCartItem {
+  id?: string;
+  productId?: string;
+  title?: string;
+  name?: string;
+  price?: number | string;
+  quantity?: number;
+  image?: string;
+  images?: string[];
+  vendor?: string;
 }
 
-interface Cart {
-  items: CartItem[];
-  subtotal: number;
-  itemCount: number;
+interface StoredCart {
+  items?: StoredCartItem[];
+  subtotal?: number;
+  total?: number;
+  itemCount?: number;
 }
 
-interface Customer {
-  email: string;
-  isLoggedIn: boolean;
-  firstName: string | null;
-  lastName: string | null;
-  phone: string | null;
+interface StoredUser {
+  email?: string;
+  name?: string;
+  phone?: string;
 }
 
-// Server Component
-export default async function CheckoutPage() {
-  // Get cart from cookies or session
-  const cart = await getCart();
-  
-  // Redirect to cart if empty
-  if (cart.itemCount === 0) {
-    redirect('/cart');
+export default function CheckoutPage() {
+  const router = useRouter();
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadCheckoutData = () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Load cart from localStorage
+        const storedCart = localStorage.getItem('cart');
+        if (storedCart) {
+          try {
+            const parsedCart = JSON.parse(storedCart) as StoredCart | StoredCartItem[] | null;
+            
+            // Transform the cart data to match the Cart type
+            let transformedCart: Cart;
+            
+            // Handle different cart structures
+            if (parsedCart && 'items' in parsedCart && Array.isArray(parsedCart.items)) {
+              // Cart is an object with items array
+              const transformedItems: CartItem[] = parsedCart.items.map((item: StoredCartItem) => ({
+                id: item.id || item.productId || `temp-${Date.now()}-${Math.random()}`,
+                title: item.title || item.name || 'Product',
+                price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price)) || 0,
+                quantity: item.quantity || 1,
+                image: item.image || (item.images && item.images[0]) || '/placeholder-image.jpg',
+                vendor: item.vendor || 'FunCorp'
+              }));
+
+              // Calculate totals if not provided
+              const calculatedSubtotal = transformedItems.reduce(
+                (sum: number, item: CartItem) => sum + (item.price * item.quantity), 
+                0
+              );
+
+              transformedCart = {
+                items: transformedItems,
+                subtotal: parsedCart.subtotal || calculatedSubtotal,
+                total: parsedCart.total || calculatedSubtotal,
+                itemCount: parsedCart.itemCount || transformedItems.length
+              };
+            } 
+            else if (Array.isArray(parsedCart)) {
+              // Cart is just an array of items
+              const transformedItems: CartItem[] = parsedCart.map((item: StoredCartItem) => ({
+                id: item.id || item.productId || `temp-${Date.now()}-${Math.random()}`,
+                title: item.title || item.name || 'Product',
+                price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price)) || 0,
+                quantity: item.quantity || 1,
+                image: item.image || (item.images && item.images[0]) || '/placeholder-image.jpg',
+                vendor: item.vendor || 'FunCorp'
+              }));
+
+              const calculatedSubtotal = transformedItems.reduce(
+                (sum: number, item: CartItem) => sum + (item.price * item.quantity), 
+                0
+              );
+
+              transformedCart = {
+                items: transformedItems,
+                subtotal: calculatedSubtotal,
+                total: calculatedSubtotal,
+                itemCount: transformedItems.length
+              };
+            }
+            else {
+              // Empty or invalid cart
+              transformedCart = {
+                items: [],
+                subtotal: 0,
+                total: 0,
+                itemCount: 0
+              };
+            }
+            
+            setCart(transformedCart);
+            
+            // Redirect if cart is empty
+            if (transformedCart.items.length === 0) {
+              router.push('/cart');
+              return;
+            }
+          } catch (e) {
+            console.error('Error parsing cart:', e);
+            setError('Error loading cart data');
+          }
+        } else {
+          // Redirect to cart if empty
+          router.push('/cart');
+          return;
+        }
+
+        // Load user data from localStorage
+        try {
+          const currentUser = localStorage.getItem('currentUser');
+          const users = JSON.parse(localStorage.getItem('users') || '[]') as StoredUser[];
+          const userEmail = localStorage.getItem('userEmail');
+          const userName = localStorage.getItem('userName');
+          
+          if (currentUser) {
+            const parsedUser = JSON.parse(currentUser) as StoredUser;
+            
+            // Find full user data from users array
+            const registeredUser = users.find((u: StoredUser) => 
+              u.email?.toLowerCase() === parsedUser.email?.toLowerCase()
+            );
+
+            if (registeredUser) {
+              const nameParts = (registeredUser.name || '').split(' ');
+              setCustomer({
+                email: registeredUser.email || '',
+                firstName: nameParts[0] || '',
+                lastName: nameParts.slice(1).join(' ') || '',
+                phone: registeredUser.phone || '',
+                isLoggedIn: true
+              });
+            } else if (userEmail) {
+              const nameParts = (userName || '').split(' ');
+              setCustomer({
+                email: userEmail,
+                firstName: nameParts[0] || '',
+                lastName: nameParts.slice(1).join(' ') || '',
+                phone: '',
+                isLoggedIn: true
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          // Don't set error for user data - guest checkout is fine
+        }
+      } catch (e) {
+        console.error('Error loading checkout data:', e);
+        setError('Failed to load checkout data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCheckoutData();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#E9454D] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading checkout...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Get customer info if logged in
-  const customer = await getCustomer();
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-sm">
+          <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => router.push('/cart')}
+            className="px-6 py-2 bg-[#E9454D] text-white rounded-lg hover:bg-[#d13d45] transition-colors"
+          >
+            Return to Cart
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cart || cart.items.length === 0) {
+    return null; // Will redirect to cart
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container-custom max-w-7xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Checkout Form - Takes 2 columns on large screens */}
+          {/* Left Column - Checkout Form */}
           <div className="lg:col-span-2">
-            <Suspense fallback={<Loading />}>
-              <CheckoutForm 
-                cart={cart} 
-                customer={customer}
-              />
-            </Suspense>
+            <CheckoutForm cart={cart} customer={customer} />
           </div>
 
-          {/* Order Summary Sidebar - Takes 1 column on large screens */}
+          {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <OrderSummary cart={cart} />
-            </div>
+            <OrderSummary cart={cart} />
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-// Server actions to get data
-async function getCart(): Promise<Cart> {
-  try {
-    const cookieStore = await cookies();
-    const cartData = cookieStore.get('cart');
-    
-    if (cartData) {
-      return JSON.parse(cartData.value) as Cart;
-    }
-  } catch (error) {
-    console.error('Error reading cart from cookies:', error);
-  }
-
-  // Return sample data if no cart in cookies (for development)
-  return {
-    items: [
-      {
-        id: '1',
-        productId: '43980435030316',
-        title: 'Majorette Street Cars Assortment - Design & Style May Vary, Only 1 Car Included',
-        price: 167.00,
-        compareAtPrice: 185.00,
-        image: 'https://cdn.shopify.com/s/files/1/0666/6472/6828/files/01ac06af-6253-487c-b7b2-c94a7d381f20.jpg?v=1767007458',
-        vendor: 'Majorette',
-        sku: 'SIM-212053051',
-        condition: 'New',
-        quantity: 1
-      },
-      {
-        id: '2',
-        productId: '52586049831212',
-        title: 'Hot Wheels 2026 DC Comics Batman-Themed Silver Celebration Series 1:64 Scale - Set Of 5 Cars',
-        price: 1495.00,
-        compareAtPrice: 1495.00,
-        image: 'https://cdn.shopify.com/s/files/1/0666/6472/6828/files/WhatsAppImage2026-01-14at12.57.03PM.webp?v=1769254333',
-        vendor: 'Hot Wheels',
-        sku: 'MTL-HDG89-A',
-        condition: 'New',
-        quantity: 1
-      },
-      {
-        id: '3',
-        productId: '43980052332844',
-        title: 'Fisher Price Stacking Cups',
-        price: 137.00,
-        compareAtPrice: 278.00,
-        image: 'https://cdn.shopify.com/s/files/1/0666/6472/6828/products/fisher_price_stacking_cups_1.jpg?v=1675922439',
-        vendor: 'Fisher Price',
-        sku: 'MTL-GCM79',
-        condition: 'New',
-        quantity: 1
-      }
-    ],
-    subtotal: 1799.00,
-    itemCount: 3
-  };
-}
-
-async function getCustomer(): Promise<Customer | null> {
-  try {
-    // Check if user is logged in (from session/cookies)
-    const cookieStore = await cookies();
-    const session = cookieStore.get('session');
-    const userData = cookieStore.get('user');
-    
-    if (!session) {
-      return null;
-    }
-
-    if (userData) {
-      return JSON.parse(userData.value) as Customer;
-    }
-
-    // Return mock customer data for development
-    return {
-      email: 'sharma9870harsh@gmail.com',
-      isLoggedIn: true,
-      firstName: null,
-      lastName: null,
-      phone: null
-    };
-  } catch (error) {
-    console.error('Error reading customer from cookies:', error);
-    return null;
-  }
 }
